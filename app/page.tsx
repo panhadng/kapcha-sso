@@ -4,65 +4,42 @@ import { useMsal } from "@azure/msal-react";
 import { useEffect, useState } from "react";
 import * as microsoftTeams from "@microsoft/teams-js";
 import Image from "next/image";
-import {
-  InteractionStatus,
-  InteractionRequiredAuthError,
-  SilentRequest,
-} from "@azure/msal-browser";
+
+interface TeamsUserInfo {
+  displayName?: string;
+  userPrincipalName?: string;
+  id?: string;
+}
 
 export default function Home() {
-  const { instance, accounts, inProgress } = useMsal();
+  const { instance, accounts } = useMsal();
   const [isInTeams, setIsInTeams] = useState<boolean | null>(null);
+  const [teamsUser, setTeamsUser] = useState<TeamsUserInfo | null>(null);
   const [loginStatus, setLoginStatus] = useState<
     "idle" | "loading" | "success" | "error"
   >("idle");
   const [error, setError] = useState<string | null>(null);
 
-  // Silent authentication logic
-  useEffect(() => {
-    const attemptSilentLogin = async () => {
-      if (accounts.length === 0 && inProgress === InteractionStatus.None) {
-        try {
-          // Try silent token acquisition
-          const silentRequest: SilentRequest = {
-            scopes: ["User.Read"], // Add any other scopes you need
-            account: accounts[0] ?? null,
-          };
-
-          await instance.acquireTokenSilent(silentRequest);
-          setLoginStatus("success");
-        } catch (e) {
-          if (e instanceof InteractionRequiredAuthError) {
-            // Silent token acquisition failed, user needs to sign in interactively
-            console.log(
-              "Silent token acquisition failed, user needs to sign in interactively"
-            );
-          } else {
-            console.error("Silent token acquisition failed:", e);
-          }
-        }
-      }
-    };
-
-    attemptSilentLogin();
-  }, [accounts, inProgress, instance]);
-
-  // Teams initialization
+  // Teams initialization and context
   useEffect(() => {
     const initializeTeams = async () => {
       try {
         await microsoftTeams.app.initialize();
         setIsInTeams(true);
         const context = await microsoftTeams.app.getContext();
-        console.log("Teams context:", context);
 
-        // If in Teams, attempt SSO
-        if (context.user?.userPrincipalName) {
-          // You can use the UPN for additional context or validation
-          console.log("Teams user:", context.user.userPrincipalName);
+        if (context.user) {
+          setTeamsUser({
+            displayName: context.user.displayName,
+            userPrincipalName: context.user.userPrincipalName,
+            id: context.user.id,
+          });
+          setLoginStatus("success"); // Auto-set success if we have Teams context
         }
-      } catch (e) {
-        console.log(e, "Not in Teams environment");
+
+        console.log("Teams context:", context);
+      } catch (error) {
+        console.log(error, "Not in Teams environment");
         setIsInTeams(false);
       }
     };
@@ -75,16 +52,7 @@ export default function Home() {
     setError(null);
 
     try {
-      if (isInTeams) {
-        // Use Teams SSO if in Teams
-        await instance.loginPopup({
-          scopes: ["User.Read"], // Add any other scopes your app needs
-          prompt: "none", // Prevents additional prompts if possible
-        });
-      } else {
-        // Regular popup login for browser
-        await instance.loginPopup();
-      }
+      await instance.loginPopup();
       setLoginStatus("success");
     } catch (e) {
       console.error(e);
@@ -92,6 +60,16 @@ export default function Home() {
       setError(e instanceof Error ? e.message : "Login failed");
     }
   };
+
+  // Determine user info to display
+  const userDisplayInfo =
+    teamsUser ||
+    (accounts.length > 0
+      ? {
+          displayName: accounts[0].name,
+          userPrincipalName: accounts[0].username,
+        }
+      : null);
 
   return (
     <div className="min-h-screen bg-gray-900 py-12 px-4 sm:px-6 lg:px-8">
@@ -125,69 +103,77 @@ export default function Home() {
               </div>
             )}
 
-            {/* Login status */}
-            {accounts.length > 0 ? (
+            {/* User Info Display */}
+            {userDisplayInfo ? (
               <div className="space-y-4">
                 <div className="bg-green-900/50 rounded-md p-4">
-                  <p className="text-green-300">
-                    ✓ Logged in as {accounts[0].username}
-                  </p>
-                </div>
-                <button
-                  onClick={() => instance.logout()}
-                  className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-red-800 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-900 focus:ring-red-500 transition-colors"
-                >
-                  Sign Out
-                </button>
-              </div>
-            ) : (
-              <div className="space-y-4">
-                <button
-                  onClick={handleLogin}
-                  disabled={loginStatus === "loading"}
-                  className={`w-full flex justify-center py-3 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white transition-colors
-                    ${
-                      loginStatus === "loading"
-                        ? "bg-gray-600 cursor-not-allowed"
-                        : "bg-blue-700 hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-900 focus:ring-blue-500"
-                    }`}
-                >
-                  {loginStatus === "loading" ? (
-                    <div className="flex items-center">
-                      <svg
-                        className="animate-spin -ml-1 mr-3 h-5 w-5 text-white"
-                        xmlns="http://www.w3.org/2000/svg"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                      >
-                        <circle
-                          className="opacity-25"
-                          cx="12"
-                          cy="12"
-                          r="10"
-                          stroke="currentColor"
-                          strokeWidth="4"
-                        ></circle>
-                        <path
-                          className="opacity-75"
-                          fill="currentColor"
-                          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                        ></path>
-                      </svg>
-                      Signing in...
-                    </div>
-                  ) : (
-                    "Sign in with Microsoft"
-                  )}
-                </button>
-
-                {/* Error message */}
-                {error && (
-                  <div className="rounded-md bg-red-900/50 p-4">
-                    <p className="text-sm text-red-300">{error}</p>
+                  <div className="space-y-2">
+                    <p className="text-green-300">
+                      ✓ Signed in as {userDisplayInfo.displayName}
+                    </p>
+                    <p className="text-sm text-green-200/80">
+                      {userDisplayInfo.userPrincipalName}
+                    </p>
                   </div>
+                </div>
+                {!isInTeams && (
+                  <button
+                    onClick={() => instance.logout()}
+                    className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-red-800 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-900 focus:ring-red-500 transition-colors"
+                  >
+                    Sign Out
+                  </button>
                 )}
               </div>
+            ) : (
+              !isInTeams && (
+                <div className="space-y-4">
+                  <button
+                    onClick={handleLogin}
+                    disabled={loginStatus === "loading"}
+                    className={`w-full flex justify-center py-3 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white transition-colors
+                      ${
+                        loginStatus === "loading"
+                          ? "bg-gray-600 cursor-not-allowed"
+                          : "bg-blue-700 hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-900 focus:ring-blue-500"
+                      }`}
+                  >
+                    {loginStatus === "loading" ? (
+                      <div className="flex items-center">
+                        <svg
+                          className="animate-spin -ml-1 mr-3 h-5 w-5 text-white"
+                          xmlns="http://www.w3.org/2000/svg"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                        >
+                          <circle
+                            className="opacity-25"
+                            cx="12"
+                            cy="12"
+                            r="10"
+                            stroke="currentColor"
+                            strokeWidth="4"
+                          ></circle>
+                          <path
+                            className="opacity-75"
+                            fill="currentColor"
+                            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                          ></path>
+                        </svg>
+                        Signing in...
+                      </div>
+                    ) : (
+                      "Sign in with Microsoft"
+                    )}
+                  </button>
+
+                  {error && (
+                    <div className="rounded-md bg-red-900/50 p-4">
+                      <p className="text-sm text-red-300">{error}</p>
+                    </div>
+                  )}
+                </div>
+              )
             )}
           </div>
         </div>
