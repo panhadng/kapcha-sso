@@ -37,15 +37,24 @@ export const Profile = () => {
   // Function to get token from Teams and exchange it for Graph access
   const getGraphProfileFromTeams = async () => {
     try {
-      // 1. Get the SSO token from Teams with specific resource
+      // Use silent authentication specifically for Teams embedded browser
       const token = await microsoftTeams.authentication.getAuthToken({
         resources: [process.env.NEXT_PUBLIC_APP_URI as string],
+        silent: true, // Force silent token acquisition
       });
 
-      console.log(token, "token");
+      if (!token) {
+        console.error("Failed to get Teams SSO token silently");
+        // If silent token acquisition fails in Teams, we need to handle consent
+        await microsoftTeams.authentication.authenticate({
+          url: `${window.location.origin}/auth-start`,
+          width: 600,
+          height: 535,
+        });
+        return null;
+      }
 
       // 2. Exchange the token for Microsoft Graph token through a server-side API
-      // Create a secure API endpoint to exchange the token using OBO flow
       const response = await fetch("/api/graph/getGraphProfileOnBehalfOf", {
         method: "POST",
         headers: {
@@ -53,20 +62,39 @@ export const Profile = () => {
         },
         body: JSON.stringify({
           ssoToken: token,
-          isInTeams: true,
         }),
       });
 
       if (response.ok) {
-        // Your API should return the profile data directly, not the token
-        // This is more secure than returning the token to the client
         return await response.json();
       } else {
-        console.error("Failed to exchange token:", await response.text());
+        const errorText = await response.text();
+        console.error("Failed to exchange token:", errorText);
         return null;
       }
     } catch (error: unknown) {
       console.error("Error getting Teams token or profile:", error);
+
+      // Special handling for consent errors in Teams
+      if (
+        error instanceof Error &&
+        (error.message.includes("consent_required") ||
+          error.message.includes("invalid_client") ||
+          error.message.includes("interaction_required"))
+      ) {
+        try {
+          // Redirect to consent page
+          console.log("Consent required, redirecting to consent page");
+          await microsoftTeams.authentication.authenticate({
+            url: `${window.location.origin}/auth-start`,
+            width: 600,
+            height: 535,
+          });
+        } catch (consentError) {
+          console.error("Error during consent flow:", consentError);
+        }
+      }
+
       return null;
     }
   };
