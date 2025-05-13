@@ -37,8 +37,12 @@ export const Profile = () => {
   // Function to get token from Teams and exchange it for Graph access
   const getGraphProfileFromTeams = async () => {
     try {
-      // 1. Get the SSO token from Teams
-      const token = await microsoftTeams.authentication.getAuthToken();
+      // 1. Get the SSO token from Teams with specific resource
+      const token = await microsoftTeams.authentication.getAuthToken({
+        resources: [process.env.NEXT_PUBLIC_APP_URI as string],
+      });
+
+      console.log(token, "token");
 
       // 2. Exchange the token for Microsoft Graph token through a server-side API
       // Create a secure API endpoint to exchange the token using OBO flow
@@ -152,6 +156,8 @@ export const Profile = () => {
 
           // Then try to get additional data from Graph
           const graphData = await getGraphProfileFromTeams();
+
+          console.log(graphData, "graphData");
 
           if (graphData) {
             // Update with the rich profile data
