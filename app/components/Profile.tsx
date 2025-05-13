@@ -53,6 +53,7 @@ export const Profile = () => {
         },
         body: JSON.stringify({
           ssoToken: token,
+          isInTeams: true,
         }),
       });
 

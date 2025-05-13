@@ -1,5 +1,5 @@
 import { NextApiRequest, NextApiResponse } from 'next';
-import { ConfidentialClientApplication } from '@azure/msal-node';
+import { ConfidentialClientApplication, Configuration, LogLevel } from '@azure/msal-node';
 
 interface MSALError {
   errorCode?: string;
@@ -12,22 +12,51 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 
   try {
-    const { ssoToken } = req.body;
+    const { ssoToken, isInTeams } = req.body;
 
     if (!ssoToken) {
       return res.status(400).json({ error: 'SSO token is required' });
     }
 
-    // Initialize MSAL confidential client
-    const msalClient = new ConfidentialClientApplication({
+    // Configure MSAL
+    const msalConfig: Configuration = {
       auth: {
         clientId: process.env.NEXT_PUBLIC_AZURE_CLIENT_ID as string,
         clientSecret: process.env.AZURE_CLIENT_SECRET as string,
         authority: `https://login.microsoftonline.com/${process.env.NEXT_PUBLIC_AZURE_TENANT_ID}`
+      },
+      system: {
+        loggerOptions: {
+          loggerCallback: (level, message, containsPii) => {
+            if (containsPii) {
+              return;
+            }
+            switch (level) {
+              case LogLevel.Error:
+                console.error(message);
+                break;
+              case LogLevel.Warning:
+                console.warn(message);
+                break;
+              case LogLevel.Info:
+                console.info(message);
+                break;
+              case LogLevel.Verbose:
+                console.debug(message);
+                break;
+            }
+          },
+          piiLoggingEnabled: false,
+          logLevel: LogLevel.Info,
+        }
       }
-    });
+    };
+
+    // Initialize MSAL confidential client
+    const msalClient = new ConfidentialClientApplication(msalConfig);
 
     // Exchange the SSO token for an access token using OBO flow
+    // This works for both Teams and non-Teams contexts
     const result = await msalClient.acquireTokenOnBehalfOf({
       oboAssertion: ssoToken,
       scopes: [
