@@ -12,7 +12,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 
   try {
-    const { ssoToken, isInTeams } = req.body;
+    const { ssoToken } = req.body;
 
     if (!ssoToken) {
       return res.status(400).json({ error: 'SSO token is required' });
