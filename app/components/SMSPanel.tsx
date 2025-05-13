@@ -88,9 +88,6 @@ export const SMSPanel = () => {
       "email@example.com";
     const timestamp = new Date().toLocaleString();
 
-    console.log(teamsUser, "teamsUser");
-    console.log(accounts, "accounts");
-
     return `${userName}\n${userEmail}\nSent at: ${timestamp}`;
   };
 
@@ -104,7 +101,8 @@ export const SMSPanel = () => {
     setStatus("sending");
     setErrorMessage("");
 
-    const messageWithSignature = message + (useSignature ? getSignature() : "");
+    const messageWithSignature =
+      message + "\n\n" + (useSignature ? getSignature() : "");
 
     try {
       const results = await Promise.all(

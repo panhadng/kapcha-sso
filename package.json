@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@azure/msal-browser": "^4.12.0",
+    "@azure/msal-node": "^3.5.3",
     "@azure/msal-react": "^3.0.12",
     "@microsoft/teams-js": "^2.37.0",
     "@types/twilio": "^3.19.3",

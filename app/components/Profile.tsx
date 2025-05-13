@@ -10,6 +10,7 @@ import {
   FaBuilding,
 } from "react-icons/fa";
 import { useMsal } from "@azure/msal-react";
+import { InteractionRequiredAuthError } from "@azure/msal-browser";
 
 interface TeamsUserInfo {
   displayName?: string;
@@ -20,6 +21,11 @@ interface TeamsUserInfo {
   jobTitle?: string;
   phoneNumber?: string;
   tenantName?: string;
+  mail?: string;
+  officeLocation?: string;
+  preferredLanguage?: string;
+  businessPhones?: string[];
+  mobilePhone?: string;
 }
 
 export const Profile = () => {
@@ -27,6 +33,92 @@ export const Profile = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [isInTeams, setIsInTeams] = useState<boolean | null>(null);
   const { accounts, instance } = useMsal();
+
+  // Function to get token from Teams and exchange it for Graph access
+  const getGraphProfileFromTeams = async () => {
+    try {
+      // 1. Get the SSO token from Teams
+      const token = await microsoftTeams.authentication.getAuthToken();
+
+      // 2. Exchange the token for Microsoft Graph token through a server-side API
+      // Create a secure API endpoint to exchange the token using OBO flow
+      const response = await fetch("/api/graph/getGraphProfileOnBehalfOf", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          ssoToken: token,
+        }),
+      });
+
+      if (response.ok) {
+        // Your API should return the profile data directly, not the token
+        // This is more secure than returning the token to the client
+        return await response.json();
+      } else {
+        console.error("Failed to exchange token:", await response.text());
+        return null;
+      }
+    } catch (error: unknown) {
+      console.error("Error getting Teams token or profile:", error);
+      return null;
+    }
+  };
+
+  const getGraphProfileData = async () => {
+    if (accounts.length === 0) return null;
+
+    const accessTokenRequest = {
+      scopes: ["User.Read"],
+      account: accounts[0],
+    };
+
+    try {
+      // Get token silently
+      const response = await instance.acquireTokenSilent(accessTokenRequest);
+
+      // Call Microsoft Graph API with the token
+      const graphResponse = await fetch("https://graph.microsoft.com/v1.0/me", {
+        headers: {
+          Authorization: `Bearer ${response.accessToken}`,
+        },
+      });
+
+      if (graphResponse.ok) {
+        return await graphResponse.json();
+      } else {
+        console.error("Graph API error:", await graphResponse.text());
+        return null;
+      }
+    } catch (error) {
+      // If silent token acquisition fails, acquire token using popup
+      if (error instanceof InteractionRequiredAuthError) {
+        try {
+          const response = await instance.acquireTokenPopup(accessTokenRequest);
+
+          // Call Microsoft Graph with the token
+          const graphResponse = await fetch(
+            "https://graph.microsoft.com/v1.0/me",
+            {
+              headers: {
+                Authorization: `Bearer ${response.accessToken}`,
+              },
+            }
+          );
+
+          if (graphResponse.ok) {
+            return await graphResponse.json();
+          }
+        } catch (popupError) {
+          console.error("Error during popup authentication:", popupError);
+        }
+      } else {
+        console.error("Token acquisition error:", error);
+      }
+      return null;
+    }
+  };
 
   useEffect(() => {
     const getTeamsUser = async () => {
@@ -46,8 +138,10 @@ export const Profile = () => {
         setIsInTeams(inTeams);
 
         if (inTeams) {
-          // In Teams - get user from Teams context
+          // In Teams - get user from Teams context AND Graph API
           const context = await microsoftTeams.app.getContext();
+
+          // First set basic info from Teams context
           if (context.user) {
             setTeamsUser({
               displayName: context.user.displayName,
@@ -55,13 +149,56 @@ export const Profile = () => {
               id: context.user.id,
             });
           }
+
+          // Then try to get additional data from Graph
+          const graphData = await getGraphProfileFromTeams();
+
+          if (graphData) {
+            // Update with the rich profile data
+            setTeamsUser((prevState) => ({
+              ...prevState,
+              displayName: graphData.displayName || prevState?.displayName,
+              userPrincipalName:
+                graphData.userPrincipalName || prevState?.userPrincipalName,
+              id: graphData.id || prevState?.id,
+              givenName: graphData.givenName,
+              surname: graphData.surname,
+              jobTitle: graphData.jobTitle,
+              mail: graphData.mail,
+              businessPhones: graphData.businessPhones,
+              mobilePhone: graphData.mobilePhone,
+              officeLocation: graphData.officeLocation,
+              preferredLanguage: graphData.preferredLanguage,
+              tenantName: context.user?.tenant?.id || "",
+            }));
+          }
         } else if (accounts.length > 0) {
-          // Not in Teams but logged in via MSAL - use MSAL account info
-          setTeamsUser({
-            displayName: accounts[0].name || accounts[0].username,
-            userPrincipalName: accounts[0].username,
-            id: accounts[0].localAccountId,
-          });
+          // Not in Teams but logged in via MSAL - get additional profile data from Graph API
+          const graphData = await getGraphProfileData();
+          if (graphData) {
+            setTeamsUser({
+              displayName: graphData.displayName,
+              userPrincipalName: graphData.userPrincipalName,
+              id: graphData.id,
+              givenName: graphData.givenName,
+              surname: graphData.surname,
+              jobTitle: graphData.jobTitle,
+              mail: graphData.mail,
+              businessPhones: graphData.businessPhones,
+              mobilePhone: graphData.mobilePhone,
+              officeLocation: graphData.officeLocation,
+              preferredLanguage: graphData.preferredLanguage,
+              // Add tenant name if available
+              tenantName: accounts[0].tenantId || "",
+            });
+          } else {
+            // Fallback to basic account info if Graph API call fails
+            setTeamsUser({
+              displayName: accounts[0].name || accounts[0].username,
+              userPrincipalName: accounts[0].username,
+              id: accounts[0].localAccountId,
+            });
+          }
         }
       } catch (error) {
         console.error("Failed to get user info:", error);
@@ -71,7 +208,7 @@ export const Profile = () => {
     };
 
     getTeamsUser();
-  }, [accounts]);
+  }, [accounts, instance]);
 
   const handleLogout = () => {
     instance.logoutRedirect({ postLogoutRedirectUri: window.location.origin });
@@ -119,7 +256,9 @@ export const Profile = () => {
                     <span className="text-sm">Email</span>
                   </div>
                   <p className="text-white break-all">
-                    {teamsUser.userPrincipalName || "Not available"}
+                    {teamsUser.mail ||
+                      teamsUser.userPrincipalName ||
+                      "Not available"}
                   </p>
                 </div>
 
@@ -128,8 +267,23 @@ export const Profile = () => {
                     <FaPhone className="mr-2" />
                     <span className="text-sm">Phone</span>
                   </div>
-                  <p className="text-white">{teamsUser.phoneNumber}</p>
+                  <p className="text-white">
+                    {teamsUser.businessPhones &&
+                    teamsUser.businessPhones.length > 0
+                      ? teamsUser.businessPhones[0]
+                      : teamsUser.mobilePhone || "Not available"}
+                  </p>
                 </div>
+
+                {teamsUser.officeLocation && (
+                  <div>
+                    <div className="flex items-center text-gray-400 mb-1">
+                      <FaBuilding className="mr-2" />
+                      <span className="text-sm">Office Location</span>
+                    </div>
+                    <p className="text-white">{teamsUser.officeLocation}</p>
+                  </div>
+                )}
               </div>
 
               <div className="space-y-4">
@@ -148,8 +302,19 @@ export const Profile = () => {
                     <FaBuilding className="mr-2" />
                     <span className="text-sm">Organization</span>
                   </div>
-                  <p className="text-white">{teamsUser.tenantName}</p>
+                  <p className="text-white">
+                    {teamsUser.tenantName || "Not available"}
+                  </p>
                 </div>
+
+                {teamsUser.preferredLanguage && (
+                  <div>
+                    <div className="flex items-center text-gray-400 mb-1">
+                      <span className="text-sm">Preferred Language</span>
+                    </div>
+                    <p className="text-white">{teamsUser.preferredLanguage}</p>
+                  </div>
+                )}
               </div>
             </div>
 
