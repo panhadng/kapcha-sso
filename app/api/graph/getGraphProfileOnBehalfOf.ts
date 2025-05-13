@@ -30,8 +30,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     // Exchange the SSO token for an access token using OBO flow
     const result = await msalClient.acquireTokenOnBehalfOf({
       oboAssertion: ssoToken,
-      scopes: ["User.Read"],
-      skipCache: true
+      scopes: [
+        process.env.AZURE_API_SCOPE as string,
+      ],
+      skipCache: true,
     });
 
     if (!result || !result.accessToken) {
