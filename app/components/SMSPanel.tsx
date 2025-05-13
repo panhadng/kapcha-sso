@@ -88,6 +88,9 @@ export const SMSPanel = () => {
       "email@example.com";
     const timestamp = new Date().toLocaleString();
 
+    console.log(teamsUser, "teamsUser");
+    console.log(accounts, "accounts");
+
     return `${userName}\n${userEmail}\nSent at: ${timestamp}`;
   };
 
