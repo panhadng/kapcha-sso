@@ -60,7 +60,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const result = await msalClient.acquireTokenOnBehalfOf({
       oboAssertion: ssoToken,
       scopes: [
-        process.env.AZURE_API_SCOPE as string,
+        "api://kapcha-sso.vercel.app/f02f58c2-c37a-42a6-84f1-06f0733525d5/access_as_user",
       ],
       skipCache: true,
     });

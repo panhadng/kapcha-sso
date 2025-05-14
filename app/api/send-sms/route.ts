@@ -8,7 +8,7 @@ const fromNumber = process.env.TWILIO_PHONE_NUMBER;
 const client = twilio(accountSid, authToken);
 
 export async function POST(request: Request) {
-  try {
+  try {  
     const { to, message } = await request.json();
 
     if (!to || !message) {
