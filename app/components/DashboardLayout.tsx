@@ -1,7 +1,6 @@
 "use client";
 
 import { FC, ReactNode, useEffect, useState } from "react";
-import Link from "next/link";
 import Image from "next/image";
 import { BsChatDots } from "react-icons/bs";
 import { HiUsers } from "react-icons/hi";

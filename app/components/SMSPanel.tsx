@@ -199,7 +199,7 @@ export const SMSPanel = () => {
                   `Error ${res.status}: ${res.statusText}`
                 );
               } catch (err) {
-                return `${res.status}: ${res.statusText}`;
+                return `Error: ${err}`;
               }
             })
         );

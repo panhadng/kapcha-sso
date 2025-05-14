@@ -20,16 +20,12 @@ const CLOUD_SMS_PASSWORD = process.env.CLOUD_SMS_PASSWORD || "";
 const client = accountSid && authToken ? twilio(accountSid, authToken) : null;
 
 export async function POST(request: Request) {
-  try {  
-    const { 
-      to, 
-      message, 
-      provider = "twilio"
-    } = await request.json();
-    
+  try {
+    const { to, message, provider = "twilio" } = await request.json();
+
     if (!to || !message) {
       return NextResponse.json(
-        { error: 'Phone number and message are required' },
+        { error: "Phone number and message are required" },
         { status: 400 }
       );
     }
@@ -38,23 +34,26 @@ export async function POST(request: Request) {
     switch (provider) {
       case "twilio":
         return await sendViaTwilio(to, message);
-      
+
       case "local":
         return await sendViaLocalGateway(to, message);
-      
+
       case "cloud":
         return await sendViaCloudGateway(to, message);
-      
+
       default:
         return NextResponse.json(
-          { error: 'Invalid SMS provider' },
+          { error: "Invalid SMS provider" },
           { status: 400 }
         );
     }
   } catch (error) {
-    console.error('SMS sending error:', error);
+    console.error("SMS sending error:", error);
     return NextResponse.json(
-      { error: 'Failed to send SMS', details: error instanceof Error ? error.message : String(error) },
+      {
+        error: "Failed to send SMS",
+        details: error instanceof Error ? error.message : String(error),
+      },
       { status: 500 }
     );
   }
@@ -64,7 +63,7 @@ export async function POST(request: Request) {
 async function sendViaTwilio(to: string, message: string) {
   if (!client) {
     return NextResponse.json(
-      { error: 'Twilio credentials not configured' },
+      { error: "Twilio credentials not configured" },
       { status: 500 }
     );
   }
@@ -75,162 +74,170 @@ async function sendViaTwilio(to: string, message: string) {
     from: fromNumber,
   });
 
-  return NextResponse.json({ success: true, messageId: result.sid, provider: 'twilio' });
+  return NextResponse.json({
+    success: true,
+    messageId: result.sid,
+    provider: "twilio",
+  });
 }
 
 // Send SMS using Local SMS Gateway
-async function sendViaLocalGateway(
-  to: string | string[], 
-  message: string
-) {
+async function sendViaLocalGateway(to: string | string[], message: string) {
   const serverUrl = DEFAULT_LOCAL_SMS_GATEWAY_URL;
-  
+
   if (!serverUrl) {
     return NextResponse.json(
-      { error: 'Local SMS Gateway URL not configured' },
+      { error: "Local SMS Gateway URL not configured" },
       { status: 500 }
     );
   }
 
   // Create basic auth header if credentials are available
   const headers: HeadersInit = {
-    'Content-Type': 'application/json'
+    "Content-Type": "application/json",
   };
 
   // Use environment variables for credentials
   if (LOCAL_SMS_USERNAME && LOCAL_SMS_PASSWORD) {
-    const authString = Buffer.from(`${LOCAL_SMS_USERNAME}:${LOCAL_SMS_PASSWORD}`).toString('base64');
-    headers['Authorization'] = `Basic ${authString}`;
+    const authString = Buffer.from(
+      `${LOCAL_SMS_USERNAME}:${LOCAL_SMS_PASSWORD}`
+    ).toString("base64");
+    headers["Authorization"] = `Basic ${authString}`;
   }
-  
+
   // Format phone numbers for Local SMS Gateway (ensure +61 format for Australian numbers)
-  const formattedPhoneNumbers = Array.isArray(to) 
-    ? to.map(num => formatPhoneNumber(num))
+  const formattedPhoneNumbers = Array.isArray(to)
+    ? to.map((num) => formatPhoneNumber(num))
     : [formatPhoneNumber(to)];
 
   // Create request body
   const requestBody = JSON.stringify({
     message,
-    phoneNumbers: formattedPhoneNumbers
+    phoneNumbers: formattedPhoneNumbers,
   });
 
   // Try to send using /message endpoint first
   try {
     const response = await fetch(`${serverUrl}/message`, {
-      method: 'POST',
+      method: "POST",
       headers,
       body: requestBody,
     });
 
     if (response.ok) {
       const result = await response.json();
-      return NextResponse.json({ 
-        success: true, 
-        result, 
-        provider: 'local' 
+      return NextResponse.json({
+        success: true,
+        result,
+        provider: "local",
       });
     }
 
     // If /message fails, try the root endpoint
   } catch (error) {
     // Fall through to try root endpoint
+    console.error(
+      "Local SMS Gateway - Error with /message endpoint:",
+      error instanceof Error ? error.message : String(error)
+    );
   }
 
   // Try with root endpoint (like cloud gateway)
   const response = await fetch(serverUrl, {
-    method: 'POST',
+    method: "POST",
     headers,
     body: requestBody,
   });
 
   if (!response.ok) {
     const errorText = await response.text();
-    throw new Error(`Local SMS Gateway error: Status ${response.status} ${response.statusText}`);
+    console.error(
+      "Local SMS Gateway - Error with root endpoint:",
+      errorText
+    );
   }
 
   const result = await response.json();
-  
-  return NextResponse.json({ 
-    success: true, 
-    result, 
-    provider: 'local' 
+
+  return NextResponse.json({
+    success: true,
+    result,
+    provider: "local",
   });
 }
 
 // Send SMS using Cloud SMS Gateway
-async function sendViaCloudGateway(
-  to: string | string[], 
-  message: string
-) {
+async function sendViaCloudGateway(to: string | string[], message: string) {
   const cloudUrl = DEFAULT_CLOUD_SMS_GATEWAY_URL;
-  
+
   if (!cloudUrl) {
     return NextResponse.json(
-      { error: 'Cloud SMS Gateway URL not configured' },
+      { error: "Cloud SMS Gateway URL not configured" },
       { status: 500 }
     );
   }
-  
+
   // Create basic auth header if credentials are available
   const headers: HeadersInit = {
-    'Content-Type': 'application/json'
+    "Content-Type": "application/json",
   };
 
   // Use environment variables for credentials
   if (CLOUD_SMS_USERNAME && CLOUD_SMS_PASSWORD) {
-    const authString = Buffer.from(`${CLOUD_SMS_USERNAME}:${CLOUD_SMS_PASSWORD}`).toString('base64');
-    headers['Authorization'] = `Basic ${authString}`;
+    const authString = Buffer.from(
+      `${CLOUD_SMS_USERNAME}:${CLOUD_SMS_PASSWORD}`
+    ).toString("base64");
+    headers["Authorization"] = `Basic ${authString}`;
   }
 
   // Format phone numbers for Cloud SMS Gateway (ensure +61 format for Australian numbers)
-  const formattedPhoneNumbers = Array.isArray(to) 
-    ? to.map(num => formatPhoneNumber(num))
+  const formattedPhoneNumbers = Array.isArray(to)
+    ? to.map((num) => formatPhoneNumber(num))
     : [formatPhoneNumber(to)];
 
   const response = await fetch(cloudUrl, {
-    method: 'POST',
+    method: "POST",
     headers,
     body: JSON.stringify({
       message,
-      phoneNumbers: formattedPhoneNumbers
+      phoneNumbers: formattedPhoneNumbers,
     }),
   });
 
   if (!response.ok) {
     const errorText = await response.text();
-    throw new Error(`Cloud SMS Gateway error: Status ${response.status} ${response.statusText}`);
+    console.error("Cloud SMS Gateway - Error with root endpoint:", errorText);
   }
 
   const result = await response.json();
-  
-  return NextResponse.json({ 
-    success: true, 
-    result, 
-    provider: 'cloud' 
+
+  return NextResponse.json({
+    success: true,
+    result,
+    provider: "cloud",
   });
-  
 }
 
 // Helper function to format phone numbers to international format for Australia
 function formatPhoneNumber(phoneNumber: string): string {
   // Remove any spaces, dashes, or other non-digit characters except the plus sign
-  const cleaned = phoneNumber.toString().replace(/[^\d+]/g, '');
-  
+  const cleaned = phoneNumber.toString().replace(/[^\d+]/g, "");
+
   // Check if it's already in international format
-  if (cleaned.startsWith('+')) {
+  if (cleaned.startsWith("+")) {
     return cleaned;
   }
-  
+
   // Handle Australian numbers
-  if (cleaned.startsWith('0')) {
-    return '+61' + cleaned.substring(1);
+  if (cleaned.startsWith("0")) {
+    return "+61" + cleaned.substring(1);
   }
-  
+
   // For numbers without country code or leading zero, assume Australian and add +61
-  if (cleaned.startsWith('4')) {
-    return '+61' + cleaned;
+  if (cleaned.startsWith("4")) {
+    return "+61" + cleaned;
   }
-  
+
   // For any other number format, add + prefix
-  return '+' + cleaned;
-} 
+  return "+" + cleaned;
+}
