@@ -26,7 +26,7 @@ export async function POST(request: Request) {
       message, 
       provider = "twilio"
     } = await request.json();
-
+    
     if (!to || !message) {
       return NextResponse.json(
         { error: 'Phone number and message are required' },
@@ -80,7 +80,7 @@ async function sendViaTwilio(to: string, message: string) {
 
 // Send SMS using Local SMS Gateway
 async function sendViaLocalGateway(
-  to: string, 
+  to: string | string[], 
   message: string
 ) {
   const serverUrl = DEFAULT_LOCAL_SMS_GATEWAY_URL;
@@ -102,22 +102,54 @@ async function sendViaLocalGateway(
     const authString = Buffer.from(`${LOCAL_SMS_USERNAME}:${LOCAL_SMS_PASSWORD}`).toString('base64');
     headers['Authorization'] = `Basic ${authString}`;
   }
+  
+  // Format phone numbers for Local SMS Gateway (ensure +61 format for Australian numbers)
+  const formattedPhoneNumbers = Array.isArray(to) 
+    ? to.map(num => formatPhoneNumber(num))
+    : [formatPhoneNumber(to)];
 
-  const response = await fetch(`${serverUrl}/message`, {
+  // Create request body
+  const requestBody = JSON.stringify({
+    message,
+    phoneNumbers: formattedPhoneNumbers
+  });
+
+  // Try to send using /message endpoint first
+  try {
+    const response = await fetch(`${serverUrl}/message`, {
+      method: 'POST',
+      headers,
+      body: requestBody,
+    });
+
+    if (response.ok) {
+      const result = await response.json();
+      return NextResponse.json({ 
+        success: true, 
+        result, 
+        provider: 'local' 
+      });
+    }
+
+    // If /message fails, try the root endpoint
+  } catch (error) {
+    // Fall through to try root endpoint
+  }
+
+  // Try with root endpoint (like cloud gateway)
+  const response = await fetch(serverUrl, {
     method: 'POST',
     headers,
-    body: JSON.stringify({
-      message,
-      phoneNumbers: Array.isArray(to) ? to : [to]
-    }),
+    body: requestBody,
   });
 
   if (!response.ok) {
     const errorText = await response.text();
-    throw new Error(`Local SMS Gateway error: ${errorText}`);
+    throw new Error(`Local SMS Gateway error: Status ${response.status} ${response.statusText}`);
   }
 
   const result = await response.json();
+  
   return NextResponse.json({ 
     success: true, 
     result, 
@@ -127,7 +159,7 @@ async function sendViaLocalGateway(
 
 // Send SMS using Cloud SMS Gateway
 async function sendViaCloudGateway(
-  to: string, 
+  to: string | string[], 
   message: string
 ) {
   const cloudUrl = DEFAULT_CLOUD_SMS_GATEWAY_URL;
@@ -166,21 +198,23 @@ async function sendViaCloudGateway(
 
   if (!response.ok) {
     const errorText = await response.text();
-    throw new Error(`Cloud SMS Gateway error: ${errorText}`);
+    throw new Error(`Cloud SMS Gateway error: Status ${response.status} ${response.statusText}`);
   }
 
   const result = await response.json();
+  
   return NextResponse.json({ 
     success: true, 
     result, 
     provider: 'cloud' 
   });
+  
 }
 
 // Helper function to format phone numbers to international format for Australia
 function formatPhoneNumber(phoneNumber: string): string {
   // Remove any spaces, dashes, or other non-digit characters except the plus sign
-  const cleaned = phoneNumber.replace(/[^\d+]/g, '');
+  const cleaned = phoneNumber.toString().replace(/[^\d+]/g, '');
   
   // Check if it's already in international format
   if (cleaned.startsWith('+')) {
@@ -189,20 +223,14 @@ function formatPhoneNumber(phoneNumber: string): string {
   
   // Handle Australian numbers
   if (cleaned.startsWith('0')) {
-    // Replace the leading 0 with +61
     return '+61' + cleaned.substring(1);
   }
   
   // For numbers without country code or leading zero, assume Australian and add +61
-  if (!cleaned.startsWith('0') && !cleaned.startsWith('+')) {
-    // If number looks like a mobile number (starts with 4), add +61 directly
-    if (cleaned.startsWith('4')) {
-      return '+61' + cleaned;
-    }
-    // Otherwise, add as is
-    return '+' + cleaned;
+  if (cleaned.startsWith('4')) {
+    return '+61' + cleaned;
   }
   
-  // Return as is for other cases
-  return cleaned;
+  // For any other number format, add + prefix
+  return '+' + cleaned;
 } 

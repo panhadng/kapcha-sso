@@ -163,6 +163,8 @@ export const SMSPanel = () => {
         case "local":
         case "cloud":
           // Use our backend API for SMS gateway
+          const phoneNumbersArray = phoneNumbers.map((number) => number.trim());
+
           results = await Promise.all([
             fetch("/api/send-sms", {
               method: "POST",
@@ -170,9 +172,9 @@ export const SMSPanel = () => {
                 "Content-Type": "application/json",
               },
               body: JSON.stringify({
-                to: phoneNumbers,
+                to: phoneNumbersArray,
                 message: messageWithSignature,
-                provider: selectedProvider
+                provider: selectedProvider,
               }),
             }),
           ]);
@@ -191,9 +193,13 @@ export const SMSPanel = () => {
             .map(async (res) => {
               try {
                 const errorData = await res.json();
-                return errorData.error || errorData.details || "Unknown error";
-              } catch {
-                return res.statusText;
+                return (
+                  errorData.error ||
+                  errorData.details ||
+                  `Error ${res.status}: ${res.statusText}`
+                );
+              } catch (err) {
+                return `${res.status}: ${res.statusText}`;
               }
             })
         );
@@ -285,7 +291,7 @@ export const SMSPanel = () => {
                 onChange={(e) => setNewNumber(e.target.value)}
                 onKeyPress={handleKeyPress}
                 placeholder={
-                  selectedProvider === "cloud"
+                  selectedProvider !== "twilio"
                     ? "Enter mobile number (will format to +61)"
                     : "Enter mobile number (e.g. 0412345678)"
                 }
@@ -310,15 +316,16 @@ export const SMSPanel = () => {
                 >
                   <span className="text-white truncate">
                     {number}
-                    {selectedProvider === "cloud" && !number.startsWith("+") && (
-                      <span className="ml-1 text-xs text-blue-400">
-                        {number.startsWith("0") 
-                          ? `(→ +61${number.substring(1)})` 
-                          : number.startsWith("4") 
-                            ? `(→ +61${number})` 
+                    {selectedProvider !== "twilio" &&
+                      !number.startsWith("+") && (
+                        <span className="ml-1 text-xs text-blue-400">
+                          {number.startsWith("0")
+                            ? `(→ +61${number.substring(1)})`
+                            : number.startsWith("4")
+                            ? `(→ +61${number})`
                             : ""}
-                      </span>
-                    )}
+                        </span>
+                      )}
                   </span>
                   <button
                     onClick={() => handleRemoveNumber(number)}
@@ -334,9 +341,9 @@ export const SMSPanel = () => {
               <p className="mt-2 text-sm text-gray-400">
                 {phoneNumbers.length} number
                 {phoneNumbers.length !== 1 ? "s" : ""} added
-                {selectedProvider === "cloud" && (
+                {selectedProvider !== "twilio" && (
                   <span className="ml-1 text-blue-400">
-                    (Australian numbers will be formatted to +61 format for cloud gateway)
+                    (Australian numbers will be formatted to +61 format)
                   </span>
                 )}
               </p>
