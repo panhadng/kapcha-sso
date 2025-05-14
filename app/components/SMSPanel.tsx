@@ -5,10 +5,20 @@ import { IoMdSend, IoMdClose } from "react-icons/io";
 import { IoAddCircle } from "react-icons/io5";
 import * as microsoftTeams from "@microsoft/teams-js";
 import { useMsal } from "@azure/msal-react";
+import { FaCloud, FaServer, FaPhone } from "react-icons/fa";
 
 interface TeamsUserInfo {
   displayName?: string;
   userPrincipalName?: string;
+}
+
+type SmsProvider = "twilio" | "local" | "cloud";
+
+interface SmsProviderOption {
+  id: SmsProvider;
+  name: string;
+  icon: React.ReactNode;
+  description: string;
 }
 
 export const SMSPanel = () => {
@@ -21,7 +31,30 @@ export const SMSPanel = () => {
   const [errorMessage, setErrorMessage] = useState("");
   const [useSignature, setUseSignature] = useState(false);
   const [teamsUser, setTeamsUser] = useState<TeamsUserInfo | null>(null);
+  const [selectedProvider, setSelectedProvider] =
+    useState<SmsProvider>("twilio");
   const { accounts } = useMsal();
+
+  const smsProviders: SmsProviderOption[] = [
+    {
+      id: "twilio",
+      name: "Twilio",
+      icon: <FaPhone className="mr-2" />,
+      description: "Send SMS via Twilio API (requires account)",
+    },
+    {
+      id: "local",
+      name: "Local SMS Gateway",
+      icon: <FaServer className="mr-2" />,
+      description: "Send via local SMS Gateway app on the same network",
+    },
+    {
+      id: "cloud",
+      name: "Cloud SMS Gateway",
+      icon: <FaCloud className="mr-2" />,
+      description: "Send via cloud-hosted SMS Gateway service",
+    },
+  ];
 
   useEffect(() => {
     const getUserInfo = async () => {
@@ -105,24 +138,67 @@ export const SMSPanel = () => {
       message + "\n\n" + (useSignature ? getSignature() : "");
 
     try {
-      const results = await Promise.all(
-        phoneNumbers.map((to) =>
-          fetch("/api/send-sms", {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-              to,
-              message: messageWithSignature,
+      let results;
+
+      switch (selectedProvider) {
+        case "twilio":
+          // Use Twilio API via our backend
+          results = await Promise.all(
+            phoneNumbers.map((to) =>
+              fetch("/api/send-sms", {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                  to,
+                  message: messageWithSignature,
+                  provider: "twilio",
+                }),
+              })
+            )
+          );
+          break;
+
+        case "local":
+        case "cloud":
+          // Use our backend API for SMS gateway
+          results = await Promise.all([
+            fetch("/api/send-sms", {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({
+                to: phoneNumbers,
+                message: messageWithSignature,
+                provider: selectedProvider
+              }),
             }),
-          })
-        )
-      );
+          ]);
+          break;
+
+        default:
+          throw new Error("Invalid SMS provider selected");
+      }
 
       const hasError = results.some((res) => !res.ok);
       if (hasError) {
-        throw new Error("Failed to send some messages");
+        // Try to get more detailed error message
+        const errorDetails = await Promise.all(
+          results
+            .filter((res) => !res.ok)
+            .map(async (res) => {
+              try {
+                const errorData = await res.json();
+                return errorData.error || errorData.details || "Unknown error";
+              } catch {
+                return res.statusText;
+              }
+            })
+        );
+
+        throw new Error(`Failed to send messages: ${errorDetails.join(", ")}`);
       }
 
       setStatus("success");
@@ -170,6 +246,34 @@ export const SMSPanel = () => {
         </h2>
 
         <div className="space-y-6">
+          {/* SMS Provider Selection */}
+          <div>
+            <label className="block text-sm font-medium text-gray-200 mb-3">
+              Select SMS Provider
+            </label>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+              {smsProviders.map((provider) => (
+                <div
+                  key={provider.id}
+                  className={`flex items-center p-4 border rounded-md cursor-pointer transition-colors ${
+                    selectedProvider === provider.id
+                      ? "border-blue-500 bg-blue-900/30"
+                      : "border-gray-600 bg-gray-700 hover:bg-gray-600"
+                  }`}
+                  onClick={() => setSelectedProvider(provider.id)}
+                >
+                  <div className="mr-3 text-white">{provider.icon}</div>
+                  <div>
+                    <p className="text-white font-medium">{provider.name}</p>
+                    <p className="text-gray-400 text-xs">
+                      {provider.description}
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
           <div>
             <label className="block text-sm font-medium text-gray-200 mb-2">
               Add Phone Numbers
@@ -180,7 +284,11 @@ export const SMSPanel = () => {
                 value={newNumber}
                 onChange={(e) => setNewNumber(e.target.value)}
                 onKeyPress={handleKeyPress}
-                placeholder="+61400000000"
+                placeholder={
+                  selectedProvider === "cloud"
+                    ? "Enter mobile number (will format to +61)"
+                    : "Enter mobile number (e.g. 0412345678)"
+                }
                 className="flex-1 px-4 py-3 bg-gray-700 border border-gray-600 rounded-md text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
               <button
@@ -200,7 +308,18 @@ export const SMSPanel = () => {
                   key={index}
                   className="flex items-center justify-between bg-gray-700 p-3 rounded-md group hover:bg-gray-600 transition-colors"
                 >
-                  <span className="text-white truncate">{number}</span>
+                  <span className="text-white truncate">
+                    {number}
+                    {selectedProvider === "cloud" && !number.startsWith("+") && (
+                      <span className="ml-1 text-xs text-blue-400">
+                        {number.startsWith("0") 
+                          ? `(→ +61${number.substring(1)})` 
+                          : number.startsWith("4") 
+                            ? `(→ +61${number})` 
+                            : ""}
+                      </span>
+                    )}
+                  </span>
                   <button
                     onClick={() => handleRemoveNumber(number)}
                     className="text-gray-400 hover:text-red-400 transition-colors"
@@ -215,6 +334,11 @@ export const SMSPanel = () => {
               <p className="mt-2 text-sm text-gray-400">
                 {phoneNumbers.length} number
                 {phoneNumbers.length !== 1 ? "s" : ""} added
+                {selectedProvider === "cloud" && (
+                  <span className="ml-1 text-blue-400">
+                    (Australian numbers will be formatted to +61 format for cloud gateway)
+                  </span>
+                )}
               </p>
             )}
           </div>
@@ -284,12 +408,15 @@ export const SMSPanel = () => {
                     d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
                   ></path>
                 </svg>
-                Sending...
+                Sending via{" "}
+                {smsProviders.find((p) => p.id === selectedProvider)?.name}...
               </>
             ) : (
               <>
                 <IoMdSend className="mr-2" />
-                Send SMS ({phoneNumbers.length} recipient
+                Send SMS via{" "}
+                {smsProviders.find((p) => p.id === selectedProvider)?.name} (
+                {phoneNumbers.length} recipient
                 {phoneNumbers.length !== 1 ? "s" : ""})
               </>
             )}
