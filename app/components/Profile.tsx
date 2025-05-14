@@ -258,9 +258,9 @@ export const Profile = () => {
   }
 
   return (
-    <div className="max-w-3xl mx-auto">
-      <div className="bg-gray-800 p-8 rounded-lg border border-gray-700 shadow-lg">
-        <h2 className="text-2xl font-bold text-white mb-6 flex items-center">
+    <div className="w-full max-w-md mx-auto px-4 sm:px-6 py-6">
+      <div className="bg-gray-800 p-4 sm:p-6 rounded-lg border border-gray-700 shadow-lg max-h-[650px] overflow-y-auto">
+        <h2 className="text-xl sm:text-2xl font-bold text-white mb-4 sm:mb-6 flex items-center">
           <FaUser className="mr-2" />
           User Profile
         </h2>
@@ -269,14 +269,14 @@ export const Profile = () => {
           <div className="space-y-6">
             {/* Profile Header */}
             <div className="flex items-center space-x-4 pb-6 border-b border-gray-700">
-              <div className="bg-blue-600 rounded-full h-16 w-16 flex items-center justify-center text-white text-2xl font-bold">
+              <div className="bg-blue-600 rounded-full h-14 w-14 flex items-center justify-center text-white text-xl font-bold">
                 {teamsUser.displayName?.charAt(0) || "?"}
               </div>
               <div>
-                <h3 className="text-xl font-bold text-white">
+                <h3 className="text-lg font-bold text-white">
                   {teamsUser.displayName || "User"}
                 </h3>
-                <p className="text-gray-300">
+                <p className="text-sm text-gray-300">
                   {teamsUser.jobTitle || "No job title available"}
                 </p>
               </div>

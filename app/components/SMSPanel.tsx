@@ -228,14 +228,14 @@ export const SMSPanel = () => {
       signature === "No signature available. Please sign in.";
 
     return (
-      <div className="bg-gray-700 p-4 rounded-md border border-gray-600">
-        <p className="text-sm font-medium text-gray-200 mb-2">
+      <div className="bg-gray-700 p-3 sm:p-4 rounded-md border border-gray-600">
+        <p className="text-xs sm:text-sm font-medium text-gray-200 mb-2">
           Signature Preview:
         </p>
         <pre
-          className={`text-sm ${
+          className={`text-xs sm:text-sm ${
             isPlaceholder ? "text-gray-500" : "text-gray-300"
-          } bg-gray-800 p-3 rounded whitespace-pre-wrap font-mono`}
+          } bg-gray-800 p-2 sm:p-3 rounded whitespace-pre-wrap font-mono`}
         >
           {signature}
         </pre>
@@ -244,34 +244,36 @@ export const SMSPanel = () => {
   };
 
   return (
-    <div className="max-w-3xl mx-auto">
-      <div className="bg-gray-800 p-8 rounded-lg border border-gray-700 shadow-lg">
-        <h2 className="text-2xl font-bold text-white mb-6 flex items-center">
+    <div className="w-full max-w-md mx-auto px-4 sm:px-6 py-6">
+      <div className="bg-gray-800 p-4 sm:p-6 rounded-lg border border-gray-700 shadow-lg max-h-[650px] overflow-y-auto">
+        <h2 className="text-xl sm:text-2xl font-bold text-white mb-4 sm:mb-6 flex items-center">
           <IoMdSend className="mr-2" />
           Send Bulk SMS
         </h2>
 
-        <div className="space-y-6">
+        <div className="space-y-4 sm:space-y-6">
           {/* SMS Provider Selection */}
           <div>
-            <label className="block text-sm font-medium text-gray-200 mb-3">
+            <label className="block text-sm font-medium text-gray-200 mb-2 sm:mb-3">
               Select SMS Provider
             </label>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 sm:gap-3">
               {smsProviders.map((provider) => (
                 <div
                   key={provider.id}
-                  className={`flex items-center p-4 border rounded-md cursor-pointer transition-colors ${
+                  className={`flex items-center p-3 sm:p-4 border rounded-md cursor-pointer transition-colors ${
                     selectedProvider === provider.id
                       ? "border-blue-500 bg-blue-900/30"
                       : "border-gray-600 bg-gray-700 hover:bg-gray-600"
                   }`}
                   onClick={() => setSelectedProvider(provider.id)}
                 >
-                  <div className="mr-3 text-white">{provider.icon}</div>
+                  <div className="mr-2 sm:mr-3 text-white">{provider.icon}</div>
                   <div>
-                    <p className="text-white font-medium">{provider.name}</p>
-                    <p className="text-gray-400 text-xs">
+                    <p className="text-sm sm:text-base text-white font-medium">
+                      {provider.name}
+                    </p>
+                    <p className="text-xs text-gray-400 hidden sm:block">
                       {provider.description}
                     </p>
                   </div>
@@ -295,26 +297,26 @@ export const SMSPanel = () => {
                     ? "Enter mobile number (will format to +61)"
                     : "Enter mobile number (e.g. 0412345678)"
                 }
-                className="flex-1 px-4 py-3 bg-gray-700 border border-gray-600 rounded-md text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="flex-1 px-3 py-2 sm:px-4 sm:py-3 bg-gray-700 border border-gray-600 rounded-md text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
               <button
                 onClick={handleAddNumber}
                 disabled={!newNumber.trim()}
-                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:bg-gray-600 disabled:cursor-not-allowed flex items-center"
+                className="px-3 py-2 sm:px-4 sm:py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:bg-gray-600 disabled:cursor-not-allowed flex items-center"
               >
                 <IoAddCircle className="mr-1" />
-                Add
+                <span className="hidden sm:inline">Add</span>
               </button>
             </div>
 
             {/* Phone Number Cards */}
-            <div className="mt-4 grid grid-cols-2 gap-2">
+            <div className="mt-3 sm:mt-4 grid grid-cols-1 sm:grid-cols-2 gap-2">
               {phoneNumbers.map((number, index) => (
                 <div
                   key={index}
-                  className="flex items-center justify-between bg-gray-700 p-3 rounded-md group hover:bg-gray-600 transition-colors"
+                  className="flex items-center justify-between bg-gray-700 p-2 sm:p-3 rounded-md group hover:bg-gray-600 transition-colors"
                 >
-                  <span className="text-white truncate">
+                  <span className="text-sm sm:text-base text-white truncate">
                     {number}
                     {selectedProvider !== "twilio" &&
                       !number.startsWith("+") && (
@@ -332,13 +334,13 @@ export const SMSPanel = () => {
                     className="text-gray-400 hover:text-red-400 transition-colors"
                     aria-label="Remove number"
                   >
-                    <IoMdClose size={20} />
+                    <IoMdClose size={18} className="sm:w-5 sm:h-5" />
                   </button>
                 </div>
               ))}
             </div>
             {phoneNumbers.length > 0 && (
-              <p className="mt-2 text-sm text-gray-400">
+              <p className="mt-2 text-xs sm:text-sm text-gray-400">
                 {phoneNumbers.length} number
                 {phoneNumbers.length !== 1 ? "s" : ""} added
                 {selectedProvider !== "twilio" && (
@@ -357,8 +359,8 @@ export const SMSPanel = () => {
             <textarea
               value={message}
               onChange={(e) => setMessage(e.target.value)}
-              rows={6}
-              className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-md text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              rows={5}
+              className="w-full px-3 py-2 sm:px-4 sm:py-3 bg-gray-700 border border-gray-600 rounded-md text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
               placeholder="Enter your message here..."
             />
           </div>
@@ -373,7 +375,7 @@ export const SMSPanel = () => {
             />
             <label
               htmlFor="signature"
-              className="ml-2 block text-sm text-gray-200"
+              className="ml-2 block text-xs sm:text-sm text-gray-200"
             >
               Add signature (name, email, and timestamp)
             </label>
@@ -386,7 +388,7 @@ export const SMSPanel = () => {
             disabled={
               status === "sending" || phoneNumbers.length === 0 || !message
             }
-            className={`w-full flex justify-center items-center py-3 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white transition-colors
+            className={`w-full flex justify-center items-center py-2 sm:py-3 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white transition-colors
               ${
                 status === "sending" || phoneNumbers.length === 0 || !message
                   ? "bg-gray-600 cursor-not-allowed"
@@ -396,7 +398,7 @@ export const SMSPanel = () => {
             {status === "sending" ? (
               <>
                 <svg
-                  className="animate-spin -ml-1 mr-3 h-5 w-5 text-white"
+                  className="animate-spin -ml-1 mr-2 h-4 w-4 sm:h-5 sm:w-5 text-white"
                   xmlns="http://www.w3.org/2000/svg"
                   fill="none"
                   viewBox="0 0 24 24"
@@ -415,30 +417,33 @@ export const SMSPanel = () => {
                     d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
                   ></path>
                 </svg>
-                Sending via{" "}
-                {smsProviders.find((p) => p.id === selectedProvider)?.name}...
+                <span className="truncate">Sending...</span>
               </>
             ) : (
               <>
-                <IoMdSend className="mr-2" />
-                Send SMS via{" "}
-                {smsProviders.find((p) => p.id === selectedProvider)?.name} (
-                {phoneNumbers.length} recipient
-                {phoneNumbers.length !== 1 ? "s" : ""})
+                <IoMdSend className="mr-2 flex-shrink-0" />
+                <span className="truncate">
+                  Send SMS via{" "}
+                  {smsProviders.find((p) => p.id === selectedProvider)?.name} (
+                  {phoneNumbers.length} recipient
+                  {phoneNumbers.length !== 1 ? "s" : ""})
+                </span>
               </>
             )}
           </button>
         </div>
 
         {status === "success" && (
-          <div className="mt-4 rounded-md bg-green-900/50 p-4">
-            <p className="text-sm text-green-300">SMS sent successfully!</p>
+          <div className="mt-4 rounded-md bg-green-900/50 p-3 sm:p-4">
+            <p className="text-xs sm:text-sm text-green-300">
+              SMS sent successfully!
+            </p>
           </div>
         )}
 
         {status === "error" && (
-          <div className="mt-4 rounded-md bg-red-900/50 p-4">
-            <p className="text-sm text-red-300">{errorMessage}</p>
+          <div className="mt-4 rounded-md bg-red-900/50 p-3 sm:p-4">
+            <p className="text-xs sm:text-sm text-red-300">{errorMessage}</p>
           </div>
         )}
       </div>

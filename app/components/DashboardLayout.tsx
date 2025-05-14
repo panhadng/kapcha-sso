@@ -5,13 +5,14 @@ import Image from "next/image";
 import { BsChatDots } from "react-icons/bs";
 import { HiUsers } from "react-icons/hi";
 import { FaUsersCog, FaUser } from "react-icons/fa";
-import { IoMdSend } from "react-icons/io";
+import { IoMdSend, IoMdArrowUp } from "react-icons/io";
 import { useMsal } from "@azure/msal-react";
 import * as microsoftTeams from "@microsoft/teams-js";
 
 interface DashboardLayoutProps {
   children: ReactNode;
   setActivePage: (page: string) => void;
+  activePage?: string;
 }
 
 const ALLOWED_DOMAIN = "flyonit.com.au";
@@ -19,6 +20,7 @@ const ALLOWED_DOMAIN = "flyonit.com.au";
 export const DashboardLayout: FC<DashboardLayoutProps> = ({
   children,
   setActivePage,
+  activePage = "sms", // Default to SMS panel
 }) => {
   const menuItems = [
     { id: "teams-chat", label: "Teams Chat", icon: BsChatDots },
@@ -32,6 +34,40 @@ export const DashboardLayout: FC<DashboardLayoutProps> = ({
   const [isInTeams, setIsInTeams] = useState<boolean | null>(null);
   const [hasAccess, setHasAccess] = useState<boolean | null>(null);
   const [teamsUserEmail, setTeamsUserEmail] = useState<string | null>(null);
+  const [showMobileNav, setShowMobileNav] = useState(true);
+  const [lastScrollY, setLastScrollY] = useState(0);
+
+  // Handle scroll events for mobile nav
+  useEffect(() => {
+    const handleScroll = () => {
+      const currentScrollY = window.scrollY;
+
+      // Show nav when scrolling up or at top, hide when scrolling down
+      if (currentScrollY <= 10) {
+        // Always show at top of page
+        setShowMobileNav(true);
+      } else if (currentScrollY < lastScrollY) {
+        // Scrolling up
+        setShowMobileNav(true);
+      } else if (currentScrollY > lastScrollY && currentScrollY > 100) {
+        // Scrolling down and not at top
+        setShowMobileNav(false);
+      }
+
+      setLastScrollY(currentScrollY);
+    };
+
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, [lastScrollY]);
+
+  // Function to scroll to top
+  const scrollToTop = () => {
+    window.scrollTo({
+      top: 0,
+      behavior: "smooth",
+    });
+  };
 
   useEffect(() => {
     const checkTeams = async () => {
@@ -129,9 +165,9 @@ export const DashboardLayout: FC<DashboardLayoutProps> = ({
 
   // Show dashboard for authorized users
   return (
-    <div className="flex h-screen bg-gray-900 text-white">
-      {/* Sidebar */}
-      <div className="w-64 bg-gray-800 flex flex-col border-r border-gray-700">
+    <div className="flex flex-col md:flex-row h-screen bg-gray-900 text-white">
+      {/* Sidebar - visible on desktop only */}
+      <div className="hidden md:flex md:w-64 bg-gray-800 flex-col border-r border-gray-700">
         <div className="p-4 border-b border-gray-700">
           <Image
             src="/images/kapcha-logo.png"
@@ -146,10 +182,18 @@ export const DashboardLayout: FC<DashboardLayoutProps> = ({
           {menuItems.map((item) => (
             <button
               key={item.id}
-              className="flex items-center w-full px-4 py-3 text-sm font-medium text-gray-300 rounded-md hover:bg-gray-700 hover:text-white transition-colors"
+              className={`flex items-center w-full px-4 py-3 text-sm font-medium rounded-md transition-colors ${
+                activePage === item.id
+                  ? "bg-gray-700 text-white"
+                  : "text-gray-300 hover:bg-gray-700 hover:text-white"
+              }`}
               onClick={() => setActivePage(item.id)}
             >
-              <item.icon className="mr-3 text-gray-400" />
+              <item.icon
+                className={`mr-3 ${
+                  activePage === item.id ? "text-blue-400" : "text-gray-400"
+                }`}
+              />
               {item.label}
             </button>
           ))}
@@ -162,8 +206,68 @@ export const DashboardLayout: FC<DashboardLayoutProps> = ({
         </div>
       </div>
 
-      {/* Main content */}
-      <div className="flex-1 overflow-auto py-6">{children}</div>
+      {/* Mobile Header - Logo only, visible on mobile */}
+      <div className="md:hidden bg-gray-800 p-3 border-b border-gray-700 flex justify-center items-center">
+        <Image
+          src="/images/kapcha-logo.png"
+          alt="KAPCHA Logo"
+          width={120}
+          height={48}
+          className="mx-auto"
+        />
+      </div>
+
+      {/* Main content - centered vertically and horizontally */}
+      <div className="flex-1 overflow-auto flex items-center justify-center pb-24 md:pb-6 md:py-6">
+        <div className="w-full h-full max-h-[900px] flex items-center justify-center">
+          {children}
+        </div>
+      </div>
+
+      {/* Scroll to top button - appears when scrolled down */}
+      {lastScrollY > 300 && (
+        <button
+          onClick={scrollToTop}
+          className="md:hidden fixed bottom-24 right-4 bg-blue-500 text-white p-2 rounded-full shadow-lg z-50 w-10 h-10 flex items-center justify-center"
+          aria-label="Scroll to top"
+        >
+          <IoMdArrowUp size={20} />
+        </button>
+      )}
+
+      {/* Floating Bottom Navigation - Mobile only - wider with icons only */}
+      <div
+        className={`md:hidden fixed bottom-6 left-1/2 transform -translate-x-1/2 bg-gray-800/90 backdrop-blur-sm rounded-full shadow-lg z-50 transition-all duration-300 px-4 py-1 border border-gray-700/50 w-4/5 ${
+          showMobileNav
+            ? "opacity-100 translate-y-0"
+            : "opacity-0 translate-y-10"
+        }`}
+      >
+        <div className="flex justify-around items-center h-14">
+          {menuItems.map((item) => (
+            <button
+              key={item.id}
+              className={`flex flex-col items-center justify-center transition-all ${
+                activePage === item.id
+                  ? "text-blue-400 scale-125"
+                  : "text-gray-400 hover:text-gray-200"
+              }`}
+              onClick={() => setActivePage(item.id)}
+              aria-label={item.label}
+            >
+              <div
+                className={`relative ${
+                  activePage === item.id
+                    ? "after:absolute after:w-1.5 after:h-1.5 after:bg-blue-400 after:rounded-full after:-bottom-4 after:left-1/2 after:-translate-x-1/2"
+                    : ""
+                }`}
+              >
+                <item.icon size={24} />
+              </div>
+            </button>
+          ))}
+        </div>
+      </div>
     </div>
   );
 };

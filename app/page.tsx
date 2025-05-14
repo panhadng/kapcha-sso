@@ -194,7 +194,7 @@ export default function Home() {
   }
 
   return (
-    <DashboardLayout setActivePage={setActivePage}>
+    <DashboardLayout setActivePage={setActivePage} activePage={activePage}>
       {pageContent}
     </DashboardLayout>
   );
