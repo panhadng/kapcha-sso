@@ -258,8 +258,8 @@ export const Profile = () => {
   }
 
   return (
-    <div className="w-full max-w-md mx-auto px-4 sm:px-6 py-6">
-      <div className="bg-gray-800 p-4 sm:p-6 rounded-lg border border-gray-700 shadow-lg max-h-[650px] overflow-y-auto">
+    <div className="w-full max-w-md md:max-w-3xl mx-auto px-4 sm:px-6 py-6">
+      <div className="bg-gray-800 p-4 sm:p-6 rounded-lg border border-gray-700 shadow-lg max-h-[650px] md:max-h-none overflow-y-auto">
         <h2 className="text-xl sm:text-2xl font-bold text-white mb-4 sm:mb-6 flex items-center">
           <FaUser className="mr-2" />
           User Profile

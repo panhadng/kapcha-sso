@@ -219,7 +219,7 @@ export const DashboardLayout: FC<DashboardLayoutProps> = ({
 
       {/* Main content - centered vertically and horizontally */}
       <div className="flex-1 overflow-auto flex items-center justify-center pb-24 md:pb-6 md:py-6">
-        <div className="w-full h-full max-h-[900px] flex items-center justify-center">
+        <div className="w-full h-full md:h-auto flex items-center justify-center">
           {children}
         </div>
       </div>

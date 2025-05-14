@@ -39,19 +39,19 @@ export const SMSPanel = () => {
     {
       id: "twilio",
       name: "Twilio",
-      icon: <FaPhone className="mr-2" />,
+      icon: <FaPhone size={24} className="sm:size-8" />,
       description: "Send SMS via Twilio API (requires account)",
     },
     {
       id: "local",
       name: "Local SMS Gateway",
-      icon: <FaServer className="mr-2" />,
+      icon: <FaServer size={24} className="sm:size-8" />,
       description: "Send via local SMS Gateway app on the same network",
     },
     {
       id: "cloud",
       name: "Cloud SMS Gateway",
-      icon: <FaCloud className="mr-2" />,
+      icon: <FaCloud size={24} className="sm:size-8" />,
       description: "Send via cloud-hosted SMS Gateway service",
     },
   ];
@@ -244,8 +244,8 @@ export const SMSPanel = () => {
   };
 
   return (
-    <div className="w-full max-w-md mx-auto px-4 sm:px-6 py-6">
-      <div className="bg-gray-800 p-4 sm:p-6 rounded-lg border border-gray-700 shadow-lg max-h-[650px] overflow-y-auto">
+    <div className="w-full max-w-md md:max-w-3xl mx-auto px-4 sm:px-6 py-6">
+      <div className="bg-gray-800 p-4 sm:p-6 rounded-lg border border-gray-700 shadow-lg max-h-[650px] md:max-h-none overflow-y-auto">
         <h2 className="text-xl sm:text-2xl font-bold text-white mb-4 sm:mb-6 flex items-center">
           <IoMdSend className="mr-2" />
           Send Bulk SMS
@@ -261,19 +261,21 @@ export const SMSPanel = () => {
               {smsProviders.map((provider) => (
                 <div
                   key={provider.id}
-                  className={`flex items-center p-3 sm:p-4 border rounded-md cursor-pointer transition-colors ${
+                  className={`flex flex-row sm:flex-col items-center p-3 sm:p-4 border rounded-md cursor-pointer transition-colors ${
                     selectedProvider === provider.id
                       ? "border-blue-500 bg-blue-900/30"
                       : "border-gray-600 bg-gray-700 hover:bg-gray-600"
                   }`}
                   onClick={() => setSelectedProvider(provider.id)}
                 >
-                  <div className="mr-2 sm:mr-3 text-white">{provider.icon}</div>
-                  <div>
+                  <div className="text-white mr-3 sm:mr-0 sm:mb-3 h-10 w-10 sm:h-12 sm:w-12 flex items-center justify-center flex-shrink-0">
+                    {provider.icon}
+                  </div>
+                  <div className="sm:text-center">
                     <p className="text-sm sm:text-base text-white font-medium">
                       {provider.name}
                     </p>
-                    <p className="text-xs text-gray-400 hidden sm:block">
+                    <p className="text-xs text-gray-400">
                       {provider.description}
                     </p>
                   </div>
