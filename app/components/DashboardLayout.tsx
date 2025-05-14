@@ -207,19 +207,19 @@ export const DashboardLayout: FC<DashboardLayoutProps> = ({
       </div>
 
       {/* Mobile Header - Logo only, visible on mobile */}
-      <div className="md:hidden bg-gray-800 p-3 border-b border-gray-700 flex justify-center items-center">
+      <div className="md:hidden bg-gray-800 p-2 sm:p-3 border-b border-gray-700 flex justify-center items-center">
         <Image
           src="/images/kapcha-logo.png"
           alt="KAPCHA Logo"
           width={120}
           height={48}
-          className="mx-auto"
+          className="mx-auto max-h-[48px] w-auto"
         />
       </div>
 
       {/* Main content - centered vertically and horizontally */}
-      <div className="flex-1 overflow-auto flex items-center justify-center pb-24 md:pb-6 md:py-6">
-        <div className="w-full h-full md:h-auto flex items-center justify-center">
+      <div className="flex-1 overflow-auto flex items-start md:items-center justify-center py-2 pb-20 md:pb-6 md:py-6">
+        <div className="w-full h-full flex items-start md:items-center justify-center">
           {children}
         </div>
       </div>
@@ -228,28 +228,28 @@ export const DashboardLayout: FC<DashboardLayoutProps> = ({
       {lastScrollY > 300 && (
         <button
           onClick={scrollToTop}
-          className="md:hidden fixed bottom-24 right-4 bg-blue-500 text-white p-2 rounded-full shadow-lg z-50 w-10 h-10 flex items-center justify-center"
+          className="md:hidden fixed bottom-20 right-3 bg-blue-500 text-white p-2 rounded-full shadow-lg z-50 w-8 h-8 flex items-center justify-center"
           aria-label="Scroll to top"
         >
-          <IoMdArrowUp size={20} />
+          <IoMdArrowUp size={16} />
         </button>
       )}
 
       {/* Floating Bottom Navigation - Mobile only - wider with icons only */}
       <div
-        className={`md:hidden fixed bottom-6 left-1/2 transform -translate-x-1/2 bg-gray-800/90 backdrop-blur-sm rounded-full shadow-lg z-50 transition-all duration-300 px-4 py-1 border border-gray-700/50 w-4/5 ${
+        className={`md:hidden fixed bottom-3 sm:bottom-6 left-1/2 transform -translate-x-1/2 bg-gray-800/90 backdrop-blur-sm rounded-full shadow-lg z-50 transition-all duration-300 px-3 py-1 border border-gray-700/50 w-[90%] sm:w-4/5 ${
           showMobileNav
             ? "opacity-100 translate-y-0"
             : "opacity-0 translate-y-10"
         }`}
       >
-        <div className="flex justify-around items-center h-14">
+        <div className="flex justify-around items-center h-12">
           {menuItems.map((item) => (
             <button
               key={item.id}
               className={`flex flex-col items-center justify-center transition-all ${
                 activePage === item.id
-                  ? "text-blue-400 scale-125"
+                  ? "text-blue-400 scale-110"
                   : "text-gray-400 hover:text-gray-200"
               }`}
               onClick={() => setActivePage(item.id)}
@@ -258,11 +258,11 @@ export const DashboardLayout: FC<DashboardLayoutProps> = ({
               <div
                 className={`relative ${
                   activePage === item.id
-                    ? "after:absolute after:w-1.5 after:h-1.5 after:bg-blue-400 after:rounded-full after:-bottom-4 after:left-1/2 after:-translate-x-1/2"
+                    ? "after:absolute after:w-1 after:h-1 after:bg-blue-400 after:rounded-full after:-bottom-3 after:left-1/2 after:-translate-x-1/2"
                     : ""
                 }`}
               >
-                <item.icon size={24} />
+                <item.icon size={20} />
               </div>
             </button>
           ))}

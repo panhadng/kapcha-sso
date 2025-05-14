@@ -251,46 +251,48 @@ export const Profile = () => {
 
   if (isLoading) {
     return (
-      <div className="flex justify-center items-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+      <div className="w-full max-w-md md:max-w-3xl mx-auto px-2 sm:px-4 md:px-6 py-2 sm:py-4 md:py-6 pb-36 sm:pb-40 md:pb-6">
+        <div className="bg-gray-800 p-3 sm:p-4 md:p-6 rounded-lg border border-gray-700 shadow-lg min-h-0 h-auto max-h-[calc(100vh-160px)] md:max-h-none overflow-y-auto flex items-center justify-center">
+          <div className="animate-spin rounded-full h-8 w-8 sm:h-12 sm:w-12 border-t-2 border-b-2 border-blue-500"></div>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="w-full max-w-md md:max-w-3xl mx-auto px-4 sm:px-6 py-6">
-      <div className="bg-gray-800 p-4 sm:p-6 rounded-lg border border-gray-700 shadow-lg max-h-[650px] md:max-h-none overflow-y-auto">
-        <h2 className="text-xl sm:text-2xl font-bold text-white mb-4 sm:mb-6 flex items-center">
-          <FaUser className="mr-2" />
-          User Profile
+    <div className="w-full max-w-md md:max-w-3xl mx-auto px-2 sm:px-4 md:px-6 py-2 sm:py-4 md:py-6 pb-36 sm:pb-40 md:pb-6">
+      <div className="bg-gray-800 p-3 sm:p-4 md:p-6 rounded-lg border border-gray-700 shadow-lg min-h-0 h-auto max-h-[calc(100vh-160px)] md:max-h-none overflow-y-auto">
+        <h2 className="text-lg sm:text-xl md:text-2xl font-bold text-white mb-3 sm:mb-4 md:mb-6 flex items-center">
+          <FaUser className="mr-2 flex-shrink-0" />
+          <span className="truncate">User Profile</span>
         </h2>
 
         {teamsUser ? (
-          <div className="space-y-6">
+          <div className="space-y-4 sm:space-y-6">
             {/* Profile Header */}
-            <div className="flex items-center space-x-4 pb-6 border-b border-gray-700">
-              <div className="bg-blue-600 rounded-full h-14 w-14 flex items-center justify-center text-white text-xl font-bold">
+            <div className="flex items-center space-x-3 sm:space-x-4 pb-4 sm:pb-6 border-b border-gray-700">
+              <div className="bg-blue-600 rounded-full h-12 w-12 sm:h-14 sm:w-14 flex items-center justify-center text-white text-lg sm:text-xl font-bold flex-shrink-0">
                 {teamsUser.displayName?.charAt(0) || "?"}
               </div>
               <div>
-                <h3 className="text-lg font-bold text-white">
+                <h3 className="text-base sm:text-lg font-bold text-white">
                   {teamsUser.displayName || "User"}
                 </h3>
-                <p className="text-sm text-gray-300">
+                <p className="text-xs sm:text-sm text-gray-300">
                   {teamsUser.jobTitle || "No job title available"}
                 </p>
               </div>
             </div>
 
             {/* User Details */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
+              <div className="space-y-3 sm:space-y-4">
                 <div>
                   <div className="flex items-center text-gray-400 mb-1">
-                    <FaEnvelope className="mr-2" />
-                    <span className="text-sm">Email</span>
+                    <FaEnvelope className="mr-2 flex-shrink-0" />
+                    <span className="text-xs sm:text-sm">Email</span>
                   </div>
-                  <p className="text-white break-all">
+                  <p className="text-sm sm:text-base text-white break-all">
                     {teamsUser.mail ||
                       teamsUser.userPrincipalName ||
                       "Not available"}
@@ -299,10 +301,10 @@ export const Profile = () => {
 
                 <div>
                   <div className="flex items-center text-gray-400 mb-1">
-                    <FaPhone className="mr-2" />
-                    <span className="text-sm">Phone</span>
+                    <FaPhone className="mr-2 flex-shrink-0" />
+                    <span className="text-xs sm:text-sm">Phone</span>
                   </div>
-                  <p className="text-white">
+                  <p className="text-sm sm:text-base text-white">
                     {teamsUser.businessPhones &&
                     teamsUser.businessPhones.length > 0
                       ? teamsUser.businessPhones[0]
@@ -313,31 +315,35 @@ export const Profile = () => {
                 {teamsUser.officeLocation && (
                   <div>
                     <div className="flex items-center text-gray-400 mb-1">
-                      <FaBuilding className="mr-2" />
-                      <span className="text-sm">Office Location</span>
+                      <FaBuilding className="mr-2 flex-shrink-0" />
+                      <span className="text-xs sm:text-sm">
+                        Office Location
+                      </span>
                     </div>
-                    <p className="text-white">{teamsUser.officeLocation}</p>
+                    <p className="text-sm sm:text-base text-white">
+                      {teamsUser.officeLocation}
+                    </p>
                   </div>
                 )}
               </div>
 
-              <div className="space-y-4">
+              <div className="space-y-3 sm:space-y-4">
                 <div>
                   <div className="flex items-center text-gray-400 mb-1">
-                    <FaBriefcase className="mr-2" />
-                    <span className="text-sm">Job Title</span>
+                    <FaBriefcase className="mr-2 flex-shrink-0" />
+                    <span className="text-xs sm:text-sm">Job Title</span>
                   </div>
-                  <p className="text-white">
+                  <p className="text-sm sm:text-base text-white">
                     {teamsUser.jobTitle || "Not available"}
                   </p>
                 </div>
 
                 <div>
                   <div className="flex items-center text-gray-400 mb-1">
-                    <FaBuilding className="mr-2" />
-                    <span className="text-sm">Organization</span>
+                    <FaBuilding className="mr-2 flex-shrink-0" />
+                    <span className="text-xs sm:text-sm">Organization</span>
                   </div>
-                  <p className="text-white">
+                  <p className="text-sm sm:text-base text-white">
                     {teamsUser.tenantName || "Not available"}
                   </p>
                 </div>
@@ -345,19 +351,25 @@ export const Profile = () => {
                 {teamsUser.preferredLanguage && (
                   <div>
                     <div className="flex items-center text-gray-400 mb-1">
-                      <span className="text-sm">Preferred Language</span>
+                      <span className="text-xs sm:text-sm">
+                        Preferred Language
+                      </span>
                     </div>
-                    <p className="text-white">{teamsUser.preferredLanguage}</p>
+                    <p className="text-sm sm:text-base text-white">
+                      {teamsUser.preferredLanguage}
+                    </p>
                   </div>
                 )}
               </div>
             </div>
 
             {/* Additional Details */}
-            <div className="mt-6 pt-6 border-t border-gray-700">
-              <div className="bg-gray-700/50 rounded-md p-4">
-                <h4 className="text-white font-medium mb-2">User ID</h4>
-                <code className="text-xs text-gray-300 block overflow-x-auto">
+            <div className="mt-4 sm:mt-6 pt-4 sm:pt-6 border-t border-gray-700">
+              <div className="bg-gray-700/50 rounded-md p-3 sm:p-4">
+                <h4 className="text-sm sm:text-base text-white font-medium mb-1 sm:mb-2">
+                  User ID
+                </h4>
+                <code className="text-[10px] sm:text-xs text-gray-300 block overflow-x-auto">
                   {teamsUser.id}
                 </code>
               </div>
@@ -365,10 +377,10 @@ export const Profile = () => {
 
             {/* Add the logout button at the end, only if not in Teams */}
             {isInTeams === false && (
-              <div className="pt-6">
+              <div className="pt-4 sm:pt-6">
                 <button
                   onClick={handleLogout}
-                  className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-red-800 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-900 focus:ring-red-500 transition-colors"
+                  className="w-full flex justify-center py-1.5 sm:py-2 px-4 border border-transparent rounded-md shadow-sm text-xs sm:text-sm font-medium text-white bg-red-800 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-900 focus:ring-red-500 transition-colors"
                 >
                   Sign Out
                 </button>
@@ -376,11 +388,11 @@ export const Profile = () => {
             )}
           </div>
         ) : (
-          <div className="bg-gray-700/50 p-6 rounded-md text-center">
-            <p className="text-gray-300">
+          <div className="bg-gray-700/50 p-4 sm:p-6 rounded-md text-center">
+            <p className="text-sm sm:text-base text-gray-300">
               Unable to retrieve user profile information.
             </p>
-            <p className="text-gray-400 mt-2 text-sm">
+            <p className="text-[10px] sm:text-xs text-gray-400 mt-1 sm:mt-2">
               This may happen if you&apos;re not using Microsoft Teams or are
               not signed in.
             </p>
